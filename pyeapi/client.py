@@ -1,8 +1,10 @@
-import atexit
-import eapilib
+__all__ =  ['connect', 'Node']
+
 import json
-import yandc.arista
-import yandc.ssh
+#
+from yandc import arista, ssh
+#
+from . import eapilib
 
 
 def connect(transport=None, host='localhost', username='admin', password='', port=None, timeout=60, return_node=False, **kwargs):
@@ -13,20 +15,23 @@ def connect(transport=None, host='localhost', username='admin', password='', por
 
 
 class Node(object):
+	def __del__(self):
+		if hasattr(self, 'shell'):
+			self.shell.exit()
+
 	def __init__(self, connection, **kwargs):
 		self._connection = connection
 		self.settings = kwargs
 
-		shell_prompt = yandc.ssh.ShellPrompt(yandc.ssh.ShellPrompt.regexp_prompt(r'.+[#>]$'))
-		shell_prompt.add_prompt(yandc.ssh.ShellPrompt.regexp_prompt(r'.+\(config[^\)]*\)#$'))
+		shell_prompt = ssh.ShellPrompt(ssh.ShellPrompt.regexp_prompt(r'.+[#>]$'))
+		shell_prompt.add_prompt(ssh.ShellPrompt.regexp_prompt(r'.+\(config[^\)]*\)#$'))
 
-		self.shell = yandc.arista.SSH_Shell(self._connection.transport, shell_prompt)
+		self.shell = arista.Shell(self._connection.transport, shell_prompt)
 		self.shell.channel.set_combine_stderr(True)
 		self.shell.command('terminal dont-ask')
 		self.shell.command('terminal length 0')
 		self.shell.command('no terminal monitor')
 		self.shell.command('terminal width 160')
-		atexit.register(self.shell.exit)
 
 	def __repr__(self):
 		return 'Node(connection={})'.format(repr(self._connection))

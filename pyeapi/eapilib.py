@@ -1,4 +1,3 @@
-import atexit
 import yandc.arista
 
 class CommandError(Exception):
@@ -27,7 +26,9 @@ class SshConnection(object):
 	pass
 
 class SshEapiConnection(EapiConnection):
+	def __del__(self):
+		self.transport.disconnect()
+
 	def __init__(self, host, port=None, path=None, username=None, password=None, timeout=60, **kwargs):
 		super(SshEapiConnection, self).__init__()
 		self.transport = yandc.arista.SSH_Client(host=host, username=username, password=password)
-		atexit.register(self.transport.disconnect)
